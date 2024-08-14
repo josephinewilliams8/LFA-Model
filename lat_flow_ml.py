@@ -110,27 +110,27 @@ def mse(x, y, th, th0):
     
     return error
 
-def cross_validate(X, Y, n_splits, lam, learning_algorithm, loss_function):
-    '''
-    Splitting data into n_splits different groups and generating mean loss
-    across the entire dataset using our learning algorithm. 
+# def cross_validate(X, Y, n_splits, lam, learning_algorithm, loss_function):
+#     '''
+#     Splitting data into n_splits different groups and generating mean loss
+#     across the entire dataset using our learning algorithm. 
     
-    Args:
-        x : d x n numpy array
-        y : 1 x n numpy array
-        lam : (float) regularization strength parameter
-        learning_algorithm: function to generate theta/theta_0 values for our dataset
-        loss_function: function to generate errors from our model
+#     Args:
+#         x : d x n numpy array
+#         y : 1 x n numpy array
+#         lam : (float) regularization strength parameter
+#         learning_algorithm: function to generate theta/theta_0 values for our dataset
+#         loss_function: function to generate errors from our model
     
-    Returns:
-        mean error from our cross-validation sets
+#     Returns:
+#         mean error from our cross-validation sets
         
-    '''
-    test_errors = []
-    for (X_train, Y_train, X_test, Y_test) in make_splits(X, Y, n_splits):
-        th, th0 = learning_algorithm(X_train, Y_train, lam)
-        test_errors.append(loss_function(X_test, Y_test, th, th0))
-    return f'test error: {np.array(test_errors).mean()}'
+#     '''
+#     test_errors = []
+#     for (X_train, Y_train, X_test, Y_test) in make_splits(X, Y, n_splits):
+#         th, th0 = learning_algorithm(X_train, Y_train, lam)
+#         test_errors.append(loss_function(X_test, Y_test, th, th0))
+#     return f'test error: {np.array(test_errors).mean()}'
 
 # FUNCTIONS TO MAKE A POLYNOMIAL MODEL START HERE
 # def create_polynomial_features(X):
@@ -252,7 +252,7 @@ def load_and_split_data(file_path, test_size=0.2, random_state=None):
 
 # checking different lambda values to see which one has the lowest corresponding error
 lams = [0, 0.01, 0.02, 0.1]
-errors = [cross_validate(x, y, 4, lam, ridge_analytic, mse) for lam in lams]
+# errors = [cross_validate(x, y, 4, lam, ridge_analytic, mse) for lam in lams]
 
 # EXAMPLE USAGE HERE
 file_path = 'lft_data.csv'  # replace with the path to csv file containing test, control, and concentration.
@@ -273,7 +273,7 @@ th_c = th[1]
 th0 = th0[0]
 
 # printing out the test error that our model generates.
-print(cross_validate(x,y,4,0, ridge_analytic, mse))
+# print(cross_validate(x,y,4,0, ridge_analytic, mse))
 
 # using tkinter to generate a GUI, where the user puts in their test/control values and gets estimated concentration:
 def calc_concentration():
@@ -286,17 +286,23 @@ def calc_concentration():
         
         if res < 0:
             res=0
+            newline = None
         if res < 75:
             descript = "Minimal levels of neutrophil elastase detected."
+            newline = None
         elif res < 500:
-            descript = "Some concentratoin of neutrophil elastase detected. Please continue tracking your symptoms and results."
+            descript = "Some concentratoin of neutrophil elastase detected."
+            newline =  'Please continue tracking your symptoms and results.'
         elif res < 1400:
-            descript = "Moderately high concentration of neutrophil elastase detected. Please reach out to your care provider and continue to monitor symptoms and your results."
+            descript = "Moderately high concentration of neutrophil elastase detected."
+            newline = 'Please reach out to your care provider and continue to monitor symptoms and your results.'
         else:
-            descript = "Very high levels of neutrophil elastase detected. Please reach out to your care provider."
+            descript = "Very high levels of neutrophil elastase detected."
+            newline = 'Please reach out to your care provider.'
         
         res_label.config(text=f"Concentration: {res}")
-        descript_label.config(text=descript)
+        descript_label.config(text=f'Feedback: {descript}')
+        last.config(text=newline)
         
     except ValueError:
         res_label.config(text="Invalid Input.")
@@ -305,21 +311,24 @@ root = tk.Tk()
 root.title("Neutrophil Elastace Calculator")
 
 # place widgets
-tk.Label(root, text="Enter Test Line Value").grid(row=0, column=0, padx=10, pady=10)
+tk.Label(root, text="Enter Test Line Value").grid(row=0, column=0, padx=10, pady=10, sticky='w')
 entry1=tk.Entry(root)
 entry1.grid(row=0, column=1, padx=10, pady=10)
 
-tk.Label(root, text="Enter Control Line Value").grid(row=1, column=0, padx=10, pady=10)
+tk.Label(root, text="Enter Control Line Value").grid(row=1, column=0, padx=10, pady=10, sticky='w')
 entry2=tk.Entry(root)
 entry2.grid(row=1, column=1, padx=10, pady=10)
 
 calc_button = tk.Button(root, text="Calculate", command=calc_concentration)
-calc_button.grid(row=1, column=3, padx=20, pady=10)
+calc_button.grid(row=1, column=3, padx=20, pady=10, sticky='w')
 
-res_label = tk.Label(root, text="Approximate Concentration: ")
-res_label.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+res_label = tk.Label(root, text="Concentration: ")
+res_label.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky='w')
 
 descript_label = tk.Label(root, text="Feedback: ")
-descript_label.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+descript_label.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky='w')
+
+last = tk.Label(root)
+last.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky='w')
 
 root.mainloop()
