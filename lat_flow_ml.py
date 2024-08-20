@@ -9,8 +9,12 @@ data = pd.read_csv('lft_data.csv', header=0)
 data = data.sample(frac=1, random_state=0).reset_index(drop=True)
 
 # x and y arrays
-x = data.iloc[:, :-1].values
-y = np.array([i**(1/2) for i in data.iloc[:, -1].values])
+x = np.array(data.iloc[:, :-1].values).T
+y = np.array([i**(1/2) for i in data.iloc[:, -1].values]).reshape(1, -1)
+# note: as the code is written, the y array takes the square root of the last
+# column in our data file. for the y array to be just the last column in the data file, 
+# uncomment the following line:
+# y = np.array(data.iloc[:, -1].values).reshape(1, -1)
 
 #functions to help perform later calculations
 def make_splits(X, Y, n_splits):
@@ -27,7 +31,6 @@ def make_splits(X, Y, n_splits):
         Y : 1 x n numpy array
         n_splits : integer
     '''
-    
     d, n = X.shape
     split_size = n // n_splits  # Size of each chunk
     splits = []
@@ -110,112 +113,115 @@ def mse(x, y, th, th0):
     
     return error
 
-# def cross_validate(X, Y, n_splits, lam, learning_algorithm, loss_function):
-#     '''
-#     Splitting data into n_splits different groups and generating mean loss
-#     across the entire dataset using our learning algorithm. 
+def cross_validate(X, Y, n_splits, lam, learning_algorithm, loss_function):
+    '''
+    Splitting data into n_splits different groups and generating mean loss
+    across the entire dataset using our learning algorithm. 
     
-#     Args:
-#         x : d x n numpy array
-#         y : 1 x n numpy array
-#         lam : (float) regularization strength parameter
-#         learning_algorithm: function to generate theta/theta_0 values for our dataset
-#         loss_function: function to generate errors from our model
+    Args:
+        x : d x n numpy array
+        y : 1 x n numpy array
+        lam : (float) regularization strength parameter
+        learning_algorithm: function to generate theta/theta_0 values for our dataset
+        loss_function: function to generate errors from our model
     
-#     Returns:
-#         mean error from our cross-validation sets
+    Returns:
+        mean error from our cross-validation sets
         
-#     '''
-#     test_errors = []
-#     for (X_train, Y_train, X_test, Y_test) in make_splits(X, Y, n_splits):
-#         th, th0 = learning_algorithm(X_train, Y_train, lam)
-#         test_errors.append(loss_function(X_test, Y_test, th, th0))
-#     return f'test error: {np.array(test_errors).mean()}'
+    '''
+    test_errors = []
+    for (X_train, Y_train, X_test, Y_test) in make_splits(X, Y, n_splits):
+        th, th0 = learning_algorithm(X_train, Y_train, lam)
+        test_errors.append(loss_function(X_test, Y_test, th, th0))
+    return f'test error: {np.array(test_errors).mean()}'
 
+linear = True
 # FUNCTIONS TO MAKE A POLYNOMIAL MODEL START HERE
-# def create_polynomial_features(X):
-#     '''
-#     Transforms the input features to include polynomial terms up to degree 2.
+# UNCOMMENT LINE BELOW TO MAKE THE POLYNOMIAL MODEL TO SET LINEAR MODEL TO FALSE
+linear = False
+def create_polynomial_features(X):
+    '''
+    Transforms the input features to include polynomial terms up to degree 2.
     
-#     Args:
-#         X : d x n numpy array (d = # features, n = # data points)
+    Args:
+        X : d x n numpy array (d = # features, n = # data points)
     
-#     Returns:
-#         X_poly : p x n numpy array (p = transformed feature dimension)
-#     '''
-#     d, n = X.shape
+    Returns:
+        X_poly : p x n numpy array (p = transformed feature dimension)
+    '''
+    d, n = X.shape
     
-#     # Start with the original features
-#     features = [X]
+    # Start with the original features
+    features = [X]
     
-#     # Add square terms
-#     for i in range(d):
-#         features.append(X[i:i+1, :] ** 2)
+    # Add square terms
+    for i in range(d):
+        features.append(X[i:i+1, :] ** 2)
     
-#     # Add interaction terms
-#     for i in range(d):
-#         for j in range(i + 1, d):
-#             features.append(X[i:i+1, :] * X[j:j+1, :])
+    # Add interaction terms
+    for i in range(d):
+        for j in range(i + 1, d):
+            features.append(X[i:i+1, :] * X[j:j+1, :])
     
-#     # Combine all features into one array
-#     X_poly = np.vstack(features)
+    # Combine all features into one array
+    X_poly = np.vstack(features)
     
-#     return X_poly
+    return X_poly
 
-# def ridge_analytic_poly(X_train, Y_train, lam):
-#     '''
-#     Applies analytic ridge regression on the given training data for degree 2 polynomial features.
-#     Returns th, th0.
+def ridge_analytic_poly(X_train, Y_train, lam):
+    '''
+    Applies analytic ridge regression on the given training data for degree 2 polynomial features.
+    Returns th, th0.
 
-#     Args:
-#         X_train : d x n numpy array (d = # features, n = # data points)
-#         Y_train : 1 x n numpy array
-#         lam : (float) regularization strength parameter
+    Args:
+        X_train : p x n numpy array (p = transformed feature dimension, n = # data points)
+        Y_train : 1 x n numpy array
+        lam : (float) regularization strength parameter
     
-#     Returns:
-#         th : p x 1 numpy array (p = transformed feature dimension)
-#         th0 : 1 x 1 numpy array
-#     '''
-#     # Create polynomial features
-#     X_train_poly = create_polynomial_features(X_train)
+    Returns:
+        th : p x 1 numpy array (p = transformed feature dimension)
+        th0 : 1 x 1 numpy array
+    '''
+    # Create polynomial features
+    X_train_poly = create_polynomial_features(X_train)
     
-#     # Apply ridge regression on the polynomial features
-#     d_poly, n = X_train_poly.shape
-#     X_train_augmented = np.vstack([X_train_poly, np.ones((1, n))])
+    # Apply ridge regression on the polynomial features
+    d_poly, n = X_train_poly.shape
+    X_train_augmented = np.vstack([X_train_poly, np.ones((1, n))])
     
-#     I_augmented = np.eye(d_poly + 1)
-#     I_augmented[-1, -1] = 0  # No regularization for the intercept term
+    I_augmented = np.eye(d_poly + 1)
+    I_augmented[-1, -1] = 0  # No regularization for the intercept term
     
-#     XtX = np.dot(X_train_augmented, X_train_augmented.T)
-#     XtY = np.dot(X_train_augmented, Y_train.T)
+    XtX = np.dot(X_train_augmented, X_train_augmented.T)
+    XtY = np.dot(X_train_augmented, Y_train.T)
     
-#     th_augmented = np.linalg.solve(XtX + lam * I_augmented, XtY)
+    th_augmented = np.linalg.solve(XtX + lam * I_augmented, XtY)
     
-#     th = th_augmented[:-1]
-#     th0 = th_augmented[-1].reshape(1, 1)
+    th = th_augmented[:-1]
+    th0 = th_augmented[-1].reshape(1, 1)
     
-#     return th, th0
+    return th, th0
 
-# def mse_poly(x, y, th, th0):
-#     '''
-#     Calculates the mean-squared loss of a linear regression with polynomial features.
-#     Returns a scalar.
+def mse_poly(x, y, th, th0):
+    '''
+    Calculates the mean-squared loss of a linear regression with polynomial features.
+    Returns a scalar.
 
-#     Args:
-#         x : d x n numpy array
-#         y : 1 x n numpy array
-#         th : p x 1 numpy array (p = transformed feature dimension)
-#         th0 : 1 x 1 numpy array
-#     '''
-#     # Create polynomial features
-#     x_poly = create_polynomial_features(x)
+    Args:
+        x : d x n numpy array
+        y : 1 x n numpy array
+        th : p x 1 numpy array (p = transformed feature dimension)
+        th0 : 1 x 1 numpy array
+    '''
+    # Create polynomial features
+    x_poly = create_polynomial_features(x)
     
-#     n = x_poly.shape[1]
-#     y_pred = np.dot(th.T, x_poly) + th0
+    n = x_poly.shape[1]
+    y_pred = np.dot(th.T, x_poly) + th0
     
-#     error = np.mean((y - y_pred) ** 2)
+    error = np.mean((y - y_pred) ** 2)
     
-#     return error
+    return error
 # FUNCTIONS TO MAKE A POLYNOMIAL MODEL END HERE
 
 def load_and_split_data(file_path, test_size=0.2, random_state=None):
@@ -251,8 +257,9 @@ def load_and_split_data(file_path, test_size=0.2, random_state=None):
     return X_train.T, X_test.T, Y_train.T, Y_test.T
 
 # checking different lambda values to see which one has the lowest corresponding error
-lams = [0, 0.01, 0.02, 0.1]
+# lams = [0, 0.01, 0.02, 0.1]
 # errors = [cross_validate(x, y, 4, lam, ridge_analytic, mse) for lam in lams]
+# print(errors)
 
 # EXAMPLE USAGE HERE
 file_path = 'lft_data.csv'  # replace with the path to csv file containing test, control, and concentration.
@@ -262,16 +269,36 @@ random_state = 50  # set a seed for reproducibility (can be any number)
 # splitting our data into training and testing sets
 X_train, X_test, Y_train, Y_test = load_and_split_data(file_path, test_size, random_state)
 
-# generate the theta and theta_naught values that we will use in our model
-# lambda values changes depending on what gave the least amount of testing error from earlier trials.
-th, th0 = ridge_analytic(X_train, Y_train, 0)
-test_errors = mse(X_test, Y_test, th, th0)
+if linear is True:
+    # generate the theta and theta_naught values that we will use in our model
+    # lambda values changes depending on what gave the least amount of testing error from earlier trials.
+    th, th0 = ridge_analytic(X_train, Y_train, 0)
+    test_errors = mse(X_test, Y_test, th, th0)
 
-# assigning our theta values to their different variables (i.e. for the test line value, control line value, and offset)
-th_t = th[0]
-th_c = th[1]
-th0 = th0[0]
-
+    # assigning our theta values to their different variables (i.e. for the test line value, control line value, and offset)
+    th_test = th[0]
+    th_ctrl = th[1]
+    th0 = th0[0][0]
+else:
+    try:
+        #poly_x = create_polynomial_features(x)
+        X_train, Y_train, X_test, Y_test = make_splits(x, y, 2)[0]
+        th, th0 = ridge_analytic_poly(X_train, Y_train, lam=0)
+        test_errors = mse_poly(X_test, Y_test, th, th0)
+        
+        # assigning our theta values to their specific variables
+        th_test = th[0][0]
+        th_ctrl = th[1][0]
+        th_test2 = th[2][0]
+        th_ctrl2 = th[3][0]
+        th_test_ctrl = th[4][0]
+        th0 = th0[0][0]
+ 
+    except:
+        print('Error calculating polynomial fit.')
+        print('Double check that the polynomial functions are uncommented.')
+        print('Otherwise, check for any errors in original parsing of data from CSV file.')
+    
 # printing out the test error that our model generates.
 # print(cross_validate(x,y,4,0, ridge_analytic, mse))
 
@@ -281,9 +308,21 @@ def calc_concentration():
         test = float(entry1.get())
         ctrl = float(entry2.get())
         
-        # estimating teh amount of neutrophil elastace (ng/ml)
-        res = (th_t*test + th_c*ctrl + th0[0])**2
+        # estimating the amount of neutrophil elastace (ng/ml)
+        if linear is True:
+            res = (th_test*test + th_ctrl*ctrl + th0)**2
+        elif linear is False:
+            res = (th_test2*test**2 + th_ctrl2*ctrl**2 + th_test*test + th_ctrl*ctrl + th_test_ctrl*test*ctrl + th0)**2   
+        # please note that if linear is False, there is a much higher chance of overfitting to data and 
+        # some inaccurate calculations!
         
+        # also note that we are squaring our predictions to match the value range of our original y-column in data. 
+        # if line 17 is uncommented, then uncomment the following lines 321-324:
+        # if linear is True:
+        #     res = (th_test*test + th_ctrl*ctrl + th0)
+        # elif linear is False:
+        #     res = (th_test2*test**2 + th_ctrl2*ctrl**2 + th_test*test + th_ctrl*ctrl + th_test_ctrl*test*ctrl + th0)
+    
         if res < 0:
             res=0
             newline = None
