@@ -11,6 +11,7 @@ data = data.sample(frac=1, random_state=0).reset_index(drop=True)
 # x and y arrays
 x = np.array(data.iloc[:, :-1].values).T
 y = np.array([i**(1/2) for i in data.iloc[:, -1].values]).reshape(1, -1)
+
 # note: as the code is written, the y array takes the square root of the last
 # column in our data file. for the y array to be just the last column in the data file, 
 # uncomment the following line:
@@ -138,7 +139,7 @@ def cross_validate(X, Y, n_splits, lam, learning_algorithm, loss_function):
 linear = True
 # FUNCTIONS TO MAKE A POLYNOMIAL MODEL START HERE
 # UNCOMMENT LINE BELOW TO MAKE THE POLYNOMIAL MODEL TO SET LINEAR MODEL TO FALSE
-linear = False
+# linear = False
 def create_polynomial_features(X):
     '''
     Transforms the input features to include polynomial terms up to degree 2.
@@ -310,18 +311,18 @@ def calc_concentration():
         
         # estimating the amount of neutrophil elastace (ng/ml)
         if linear is True:
-            res = (th_test*test + th_ctrl*ctrl + th0)**2
+            res = int(th_test*test + th_ctrl*ctrl + th0)**2
         elif linear is False:
-            res = (th_test2*test**2 + th_ctrl2*ctrl**2 + th_test*test + th_ctrl*ctrl + th_test_ctrl*test*ctrl + th0)**2   
+            res = int(th_test2*test**2 + th_ctrl2*ctrl**2 + th_test*test + th_ctrl*ctrl + th_test_ctrl*test*ctrl + th0)**2   
         # please note that if linear is False, there is a much higher chance of overfitting to data and 
         # some inaccurate calculations!
         
         # also note that we are squaring our predictions to match the value range of our original y-column in data. 
-        # if line 17 is uncommented, then uncomment the following lines 321-324:
+        # if line 17 is uncommented, then uncomment the following lines 322-325:
         # if linear is True:
-        #     res = (th_test*test + th_ctrl*ctrl + th0)
+        #     res = int(th_test*test + th_ctrl*ctrl + th0)
         # elif linear is False:
-        #     res = (th_test2*test**2 + th_ctrl2*ctrl**2 + th_test*test + th_ctrl*ctrl + th_test_ctrl*test*ctrl + th0)
+        #     res = int(th_test2*test**2 + th_ctrl2*ctrl**2 + th_test*test + th_ctrl*ctrl + th_test_ctrl*test*ctrl + th0)
     
         if res < 0:
             res=0
@@ -339,7 +340,7 @@ def calc_concentration():
             descript = "Very high levels of neutrophil elastase detected."
             newline = 'Please reach out to your care provider.'
         
-        res_label.config(text=f"Concentration: {res}")
+        res_label.config(text=f"Concentration: {res} ng/ml")
         descript_label.config(text=f'Feedback: {descript}')
         last.config(text=newline)
         
@@ -371,3 +372,4 @@ last = tk.Label(root)
 last.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky='w')
 
 root.mainloop()
+
